@@ -2,7 +2,7 @@ from __future__ import division
 from __future__ import print_function
 
 import time
-from dataHandler import GCNRunner
+# from dataHandler import GCNRunner
 from lib.gcn.gcn.utils import *
 # import tensorflow
 import tensorflow.compat.v1 as tf
@@ -10,17 +10,17 @@ import tensorflow.compat.v1 as tf
 # from utils import *
 from lib.gcn.gcn.models import GCN, MLP
 
-def test_func():
-    print("Succ-ess")
-
-def train_gcn(dsIsFromMemory, gcnRunner=None, dataset_string=None):
+def train_gcn(dsIsFromMemory, gcnRunner=None, 
+    dataset_string=None, learning_rate=0.01, 
+    num_epochs=200, hidden1=16, dropout=0.5,
+    weight_decay=5e-4, early_stopping=10):
     
     if dsIsFromMemory:
         if not gcnRunner:
             raise ValueError("The memory dataset flag was set to true but there was no gcnRunner instance passed in!")
 
-        if not isinstance(gcnRunner, GCNRunner):
-            raise ValueError("The passed in object for gcnrunner is not an instance of GCNRunner! ")
+        # if not isinstance(gcnRunner, GCNRunner):
+        #     raise ValueError("The passed in object for gcnrunner is not an instance of GCNRunner! ")
     
     else:
         if not dataset_string:
@@ -33,21 +33,37 @@ def train_gcn(dsIsFromMemory, gcnRunner=None, dataset_string=None):
 
     tf.disable_eager_execution()
 
+
     # Settings
     flags = tf.app.flags
     FLAGS = flags.FLAGS
+
+    del_all_flags(FLAGS)
+    
     flags.DEFINE_string('dataset', dataset_string, 'Dataset string.')  # 'cora', 'citeseer', 'pubmed' - original tkipf strings
     flags.DEFINE_string('model', 'gcn', 'Model string.')  # 'gcn', 'gcn_cheby', 'dense'
-    flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
-    flags.DEFINE_integer('epochs', 200, 'Number of epochs to train.')
-    flags.DEFINE_integer('hidden1', 16, 'Number of units in hidden layer 1.')
-    flags.DEFINE_float('dropout', 0.5, 'Dropout rate (1 - keep probability).')
-    flags.DEFINE_float('weight_decay', 5e-4, 'Weight for L2 loss on embedding matrix.')
-    flags.DEFINE_integer('early_stopping', 10, 'Tolerance for early stopping (# of epochs).')
+    flags.DEFINE_float('learning_rate', learning_rate, 'Initial learning rate.') # used to be 0.01
+    flags.DEFINE_integer('epochs', num_epochs, 'Number of epochs to train.')
+    flags.DEFINE_integer('hidden1', hidden1, 'Number of units in hidden layer 1.')
+    flags.DEFINE_float('dropout', dropout, 'Dropout rate (1 - keep probability).')
+    flags.DEFINE_float('weight_decay', weight_decay, 'Weight for L2 loss on embedding matrix.')
+    flags.DEFINE_integer('early_stopping', early_stopping, 'Tolerance for early stopping (# of epochs).')
     flags.DEFINE_integer('max_degree', 3, 'Maximum Chebyshev polynomial degree.')
 
+    if dsIsFromMemory:
+        # x, y, tx, ty, allx, ally, graph, indices
+        adj, features, y_train, y_val, y_test, train_mask, val_mask, test_mask = load_custom_data(
+            gcnRunner.fvHandler.train_labelled, 
+            gcnRunner.fvHandler.train_labels, 
+            gcnRunner.fvHandler.test_instances, 
+            gcnRunner.fvHandler.test_labels, 
+            gcnRunner.fvHandler.train_all, 
+            gcnRunner.fvHandler.labels_all_train,
+            gcnRunner.adj_graph, 
+            gcnRunner.test_indices)
+    else:
     # Load data
-    adj, features, y_train, y_val, y_test, train_mask, val_mask, test_mask = load_data(FLAGS.dataset)
+        adj, features, y_train, y_val, y_test, train_mask, val_mask, test_mask = load_data(FLAGS.dataset)
 
     # Some preprocessing
     features = preprocess_features(features)
@@ -118,9 +134,12 @@ def train_gcn(dsIsFromMemory, gcnRunner=None, dataset_string=None):
     print("Test set results:", "cost=", "{:.5f}".format(test_cost),
         "accuracy=", "{:.5f}".format(test_acc), "time=", "{:.5f}".format(test_duration))
 
+    return features, support, y_test, test_mask, placeholders, sess, model # returning the objects needed to run a test
+
 # Define model evaluation function
 def evaluate(features, support, labels, mask, placeholders, sess, model):
     t_test = time.time()
+    # print(type(preds), type(labels))
     feed_dict_val = construct_feed_dict(features, support, labels, mask, placeholders)
     outs_val = sess.run([model.loss, model.accuracy], feed_dict=feed_dict_val)
     return outs_val[0], outs_val[1], (time.time() - t_test)
