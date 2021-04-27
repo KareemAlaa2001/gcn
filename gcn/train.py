@@ -115,12 +115,13 @@ def train_gcn(dsIsFromMemory, gcnRunner=None,
         outs = sess.run([model.opt_op, model.loss, model.accuracy], feed_dict=feed_dict)
 
         # Validation
-        cost, acc, duration = evaluate(features, support, y_val, val_mask, placeholders,sess,model)
-        cost_val.append(cost)
+        # v_cost, acc, duration, v_prec, v_recall, v_f1 = evaluate(features, support, y_val, val_mask, placeholders,sess,model)
+        v_cost, acc, duration = evaluate(features, support, y_val, val_mask, placeholders,sess,model)
+        cost_val.append(v_cost)
 
         # Print results
         print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(outs[1]),
-            "train_acc=", "{:.5f}".format(outs[2]), "val_loss=", "{:.5f}".format(cost),
+            "train_acc=", "{:.5f}".format(outs[2]), "val_loss=", "{:.5f}".format(v_cost),
             "val_acc=", "{:.5f}".format(acc), "time=", "{:.5f}".format(time.time() - t))
 
         if epoch > FLAGS.early_stopping and cost_val[-1] > np.mean(cost_val[-(FLAGS.early_stopping+1):-1]):
@@ -131,18 +132,61 @@ def train_gcn(dsIsFromMemory, gcnRunner=None,
 
     # Testing
     test_cost, test_acc, test_duration = evaluate(features, support, y_test, test_mask, placeholders,sess,model)
+    # test_cost, test_acc, test_duration, precision, recall, f1 = evaluate(features, support, y_test, test_mask, placeholders,sess,model)
     print("Test set results:", "cost=", "{:.5f}".format(test_cost),
         "accuracy=", "{:.5f}".format(test_acc), "time=", "{:.5f}".format(test_duration))
+
+    test(features, support, y_test, test_mask, placeholders, sess, model)
 
     return features, support, y_test, test_mask, placeholders, sess, model # returning the objects needed to run a test
 
 # Define model evaluation function
 def evaluate(features, support, labels, mask, placeholders, sess, model):
     t_test = time.time()
-    # print(type(preds), type(labels))
     feed_dict_val = construct_feed_dict(features, support, labels, mask, placeholders)
-    outs_val = sess.run([model.loss, model.accuracy], feed_dict=feed_dict_val)
+    # outs_val = sess.run([model.loss, model.accuracy, model.precision, model.recall, model.f1], feed_dict=feed_dict_val)
+    outs_val = sess.run([model.loss, model.accuracy, model.outputs, model.labels, model.mask], feed_dict=feed_dict_val)
+    # preds = outs_val[2]
+    # labels = outs_val[3]
+    # mask = outs_val[4]
+
+    # preds_ints = tf.argmax(preds, 1)
+    # # print(preds_ints)
+    # # print(tf.shape(preds_ints).eval(session=sess))
+    # labels_ints = tf.argmax(labels, 1)
+    # # print(tf.shape(labels_ints).eval(session=sess))
+    # # print(labels_ints)
+    # mask = tf.cast(mask, dtype=tf.float32)
+    # # print(tf.shape(mask).eval(session=sess))
+    # # print(mask)
+    # precision = tf.metrics.precision(labels_ints, preds_ints, weights=mask)
+    # print("Precision=",precision)
+
     return outs_val[0], outs_val[1], (time.time() - t_test)
+    # return outs_val[0], outs_val[1], (time.time() - t_test), outs_val[2], outs_val[3], outs_val[4]
+
+def test(features, support, labels, mask, placeholders, sess, model):
+    feed_dict = construct_feed_dict(features, support, labels, mask, placeholders)
+    outs = sess.run([model.outputs, model.labels, model.mask], feed_dict=feed_dict)
+    output_list = outs[0]
+    label_list = outs[1] # lmao this is dumb im already passing in the labels and mask
+    test_mask = outs[2]
+
+    # print(len(list(filter(lambda x: x != 0, output_list))))
+    # print(len(list(filter(lambda x: x != 0, label_list))))
+    # print(type(output_list))
+    print(len(label_list))
+    # print(type(test_mask))
+    print(len(list(filter(lambda x: any(x), label_list))))
+    print(type(labels))
+    print(len(labels))
+    # print(type(test_mask))
+    print(len(list(filter(lambda x: any(x), labels))))
+    print(type(mask))
+    print(len(mask))
+    # print(type(test_mask))
+    # print(len(list(filter(lambda x: any(x), mask))))
+
 
 if __name__ == '__main__':
     train_gcn(False, dataset_string="cora")

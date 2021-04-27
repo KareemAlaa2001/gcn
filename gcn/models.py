@@ -27,8 +27,14 @@ class Model(object):
         self.inputs = None
         self.outputs = None
 
+        self.labels = []
+        self.mask = []
+
         self.loss = 0
         self.accuracy = 0
+        self.precision = 0
+        self.recall = 0
+        self.f1 = 0
         self.optimizer = None
         self.opt_op = None
 
@@ -54,6 +60,11 @@ class Model(object):
         # Build metrics
         self._loss()
         self._accuracy()
+        self._precision()
+        self._recall()
+        self._f1()
+        self._labels()
+        self._mask()
 
         self.opt_op = self.optimizer.minimize(self.loss)
 
@@ -64,6 +75,21 @@ class Model(object):
         raise NotImplementedError
 
     def _accuracy(self):
+        raise NotImplementedError
+
+    def _precision(self):
+        raise NotImplementedError
+
+    def _recall(self):
+        raise NotImplementedError
+    
+    def _f1(self):
+        raise NotImplementedError
+
+    def _labels(self):
+        raise NotImplementedError
+
+    def _mask(self):
         raise NotImplementedError
 
     def save(self, sess=None):
@@ -155,6 +181,25 @@ class GCN(Model):
     def _accuracy(self):
         self.accuracy = masked_accuracy(self.outputs, self.placeholders['labels'],
                                         self.placeholders['labels_mask'])
+
+    def _precision(self):
+        self.precision = masked_precision(self.outputs, self.placeholders['labels'],
+                                        self.placeholders['labels_mask'])
+    
+    def _recall(self):
+        self.recall = masked_recall(self.outputs, self.placeholders['labels'],
+                                        self.placeholders['labels_mask'])
+    
+    def _f1(self):
+        self.f1 = masked_f1_score(self.outputs, self.placeholders['labels'],
+                                        self.placeholders['labels_mask'])
+    
+    def _labels(self):
+        self.labels = self.placeholders['labels']
+
+    def _mask(self):
+        self.mask = self.placeholders['labels_mask']
+
 
     def _build(self):
 
