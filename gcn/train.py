@@ -6,6 +6,8 @@ import time
 from lib.gcn.gcn.utils import *
 # import tensorflow
 import tensorflow.compat.v1 as tf
+import keras
+import numpy as np
 
 # from utils import *
 from lib.gcn.gcn.models import GCN, MLP
@@ -145,7 +147,7 @@ def evaluate(features, support, labels, mask, placeholders, sess, model):
     t_test = time.time()
     feed_dict_val = construct_feed_dict(features, support, labels, mask, placeholders)
     # outs_val = sess.run([model.loss, model.accuracy, model.precision, model.recall, model.f1], feed_dict=feed_dict_val)
-    outs_val = sess.run([model.loss, model.accuracy, model.outputs, model.labels, model.mask], feed_dict=feed_dict_val)
+    outs_val = sess.run([model.loss, model.accuracy, model.outputs], feed_dict=feed_dict_val)
     # preds = outs_val[2]
     # labels = outs_val[3]
     # mask = outs_val[4]
@@ -167,23 +169,89 @@ def evaluate(features, support, labels, mask, placeholders, sess, model):
 
 def test(features, support, labels, mask, placeholders, sess, model):
     feed_dict = construct_feed_dict(features, support, labels, mask, placeholders)
-    outs = sess.run([model.outputs, model.labels, model.mask], feed_dict=feed_dict)
-    output_list = outs[0]
-    label_list = outs[1] # lmao this is dumb im already passing in the labels and mask
-    test_mask = outs[2]
+    outs = sess.run([model.predict()], feed_dict=feed_dict)
+    predictions = outs[0]
+    # precision = outs[1]
+    
+    # print("Precision:",precision)
 
-    # print(len(list(filter(lambda x: x != 0, output_list))))
-    # print(len(list(filter(lambda x: x != 0, label_list))))
-    # print(type(output_list))
-    print(len(label_list))
+    # # print(labels.tolist())
+    # # print(len(list(filter(lambda x: x != 0, output_list))))
+    
+    # # print(type(output_list))
+    # preds_ints = np.argmax(predictions, axis=1)
+    # print(np.shape(preds_ints))
+    # print(np.shape(predictions))
+    # labels_ints = np.argmax(labels, axis=1)
+    # print(np.shape(labels_ints))
+    # print(len(list(filter(lambda x: x != 0,labels_ints))))
+
+    # correct_prediction = np.equal(np.argmax(predictions, 1), np.argmax(labels, 1))
+    # accuracy_all = correct_prediction.astype(float)
+    # mask = mask.astype(float)
+    # mask /= np.mean(mask)
+    # accuracy_all *= mask
+    # accuracy = np.mean(accuracy_all)
+
+    # print("The accuracy I tried to calc out of this = ", accuracy)
+
+    
+
+    
+
+
     # print(type(test_mask))
-    print(len(list(filter(lambda x: any(x), label_list))))
-    print(type(labels))
-    print(len(labels))
-    # print(type(test_mask))
-    print(len(list(filter(lambda x: any(x), labels))))
-    print(type(mask))
-    print(len(mask))
+
+    # print(preds_ints.tolist())
+    # print(labels_ints.tolist())
+
+
+    # print(type(labels))
+    # print(len(labels))
+    # # print(type(test_mask))
+
+    # print(type(mask))
+    # print(len(mask))
+    # print(len(list(filter(lambda x: x, mask))))
+
+    # commented for now --  NOT VALID FOR MULTICLASS
+    # truePos = 0
+    # falsePos = 0
+    # falseNeg = 0
+    # for i in range(len(preds_ints)):
+    #     # if the mask for that
+    #     if not mask[i]:
+    #         continue
+
+    #     pred = preds_ints[i]
+    #     label = labels_ints[i]
+
+    #     if pred == label:
+    #         truePos += 1
+
+    #     else:
+    #         if label == 0 and pred == 1:
+    #             falsePos += 1
+
+    #         if label == 1 and pred == 0:
+    #             falseNeg += 1
+            
+    # recall = truePos / (truePos + falseNeg)
+
+    # precision = truePos / (truePos + falsePos)
+
+    
+
+    # trueposlayer = keras.metrics.TruePositives()
+    # trueposlayer.update_state(labels_reduced, predictions, sample_weight=mask)
+    # truepos = trueposlayer.result()
+    
+    # falseneglayer = keras.metrics.FalseNegatives()
+    # falseneglayer.update_state(labels_reduced,predictions, sample_weight=mask)
+    # falseneg = falseneglayer.result()
+
+    # print("True positives:", sess.run(truepos))
+    # print("False negatives:", sess.run(falseneg))
     # print(type(test_mask))
     # print(len(list(filter(lambda x: any(x), mask))))
 

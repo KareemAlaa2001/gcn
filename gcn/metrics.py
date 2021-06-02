@@ -27,7 +27,7 @@ def masked_accuracy(preds, labels, mask):
 # skeleton function to not throw an error ( at least i think it wont)
 # trying to just return int versions of the predictions
 def masked_precision(preds, labels, mask):
-    pass
+    return tf.metrics.precision(labels,preds,weights=mask)
     # preds_ints = tf.argmax(preds, 1)
     # labels_ints = tf.argmax(labels, 1)
     # mask = tf.cast(mask, dtype=tf.float32)

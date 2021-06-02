@@ -27,8 +27,8 @@ class Model(object):
         self.inputs = None
         self.outputs = None
 
-        self.labels = []
-        self.mask = []
+        # self.labels = []
+        # self.mask = []
 
         self.loss = 0
         self.accuracy = 0
@@ -63,8 +63,8 @@ class Model(object):
         self._precision()
         self._recall()
         self._f1()
-        self._labels()
-        self._mask()
+        # self._labels()
+        # self._mask()
 
         self.opt_op = self.optimizer.minimize(self.loss)
 
@@ -86,11 +86,11 @@ class Model(object):
     def _f1(self):
         raise NotImplementedError
 
-    def _labels(self):
-        raise NotImplementedError
+    # def _labels(self):
+    #     raise NotImplementedError
 
-    def _mask(self):
-        raise NotImplementedError
+    # def _mask(self):
+    #     raise NotImplementedError
 
     def save(self, sess=None):
         if not sess:
@@ -194,11 +194,11 @@ class GCN(Model):
         self.f1 = masked_f1_score(self.outputs, self.placeholders['labels'],
                                         self.placeholders['labels_mask'])
     
-    def _labels(self):
-        self.labels = self.placeholders['labels']
+    # def _labels(self):
+    #     self.labels = self.placeholders['labels']
 
-    def _mask(self):
-        self.mask = self.placeholders['labels_mask']
+    # def _mask(self):
+    #     self.mask = self.placeholders['labels_mask']
 
 
     def _build(self):
